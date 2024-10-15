@@ -4,7 +4,7 @@
 #define PIN_LED   9   // LED active-low
 #define PIN_TRIG  12  // sonar sensor TRIGGER
 #define PIN_ECHO  13  // sonar sensor ECHO
-#define PIN_SERVO 10  // servi motor
+#define PIN_SERVO 10  // servo motor
 
 // configurable parameters for sonar
 #define SND_VEL 346.0     // sound velocity at 24 celsius degree (unit: m/sec)
@@ -25,7 +25,6 @@
 
 // duty duration for myservo.writeMicroseconds()
 // NEEDS TUNING (servo by servo)
- 
 #define _DUTY_MIN 400 // servo full clockwise position (0 degree)
 #define _DUTY_NEU 1550 // servo neutral position (90 degree)
 #define _DUTY_MAX 2600 // servo full counterclockwise position (180 degree)
@@ -77,16 +76,11 @@ void loop() {
   dist_ema = dist_raw * _EMA_ALPHA + dist_prev * (1 - _EMA_ALPHA);
   dist_prev = dist_ema;
 
-  // adjust servo position according to the USS read value
-  // add your code here!
-  if (dist_raw <= _TARGET_LOW) {
-    myservo.writeMicroseconds(_DUTY_MIN);
-  } else if ((dist_raw > _TARGET_LOW) & (dist_raw < _TARGET_HIGH)) {
-    myservo.writeMicroseconds(_DUTY_NEU);
-  } else if (dist_raw >_TARGET_HIGH) {
-    myservo.writeMicroseconds(_DUTY_MAX);
-  }
-
+  // adjust servo position smoothly according to the USS read value
+  float servo_position = map(dist_raw, _DIST_MIN, _DIST_MAX, _DUTY_MIN, _DUTY_MAX);
+  servo_position = constrain(servo_position, _DUTY_MIN, _DUTY_MAX);
+  
+  myservo.writeMicroseconds(servo_position);
 
   // output the distance to the serial port
   Serial.print("Min:");    Serial.print(_DIST_MIN);
@@ -108,4 +102,5 @@ float USS_measure(int TRIG, int ECHO)
   delayMicroseconds(PULSE_DURATION);
   digitalWrite(TRIG, LOW);
   
-  return pulseIn(ECHO, HIGH, TIMEOUT) * SCALE; // unit: mm
+  return pulseIn(ECHO, HIGH, TIMEOUT) * SCALE; // unit: mm         
+}
